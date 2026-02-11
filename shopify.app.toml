@@ -1,0 +1,27 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+name = "aigen"
+client_id = "e331929395e54b3dc5c1a68f0d6c2afe"
+application_url = "https://handle-anywhere-including-evaluation.trycloudflare.com"
+embedded = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://handle-anywhere-including-evaluation.trycloudflare.com/auth/callback",
+  "https://handle-anywhere-including-evaluation.trycloudflare.com/auth/shopify/callback",
+  "https://handle-anywhere-including-evaluation.trycloudflare.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2025-01"
+
+[pos]
+embedded = false
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "quickstart-60f5396d.myshopify.com"
