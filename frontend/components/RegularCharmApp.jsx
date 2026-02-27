@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import CharmPreview from "./CharmPreview.jsx";
+import CharmPreviewDebug from "./CharmPreviewDebug.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";
 import { useCharmGeneration } from "./hooks/useCharmGeneration.js";
+import { useCharmGenerationDebug } from "./hooks/useCharmGenerationDebug.js";
 import {
   REGULAR_CHARM_SAMPLES,
   STORAGE_KEYS,
@@ -12,7 +14,13 @@ import {
 } from "./utils/constants.js";
 
 export default function RegularCharmApp() {
+  const searchParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : "",
+  );
+  const isDebugMode = searchParams.has("charmDebug");
+
   const [imageUrl, setImageUrl] = useState(BLUEPRINT_URL);
+  const [modelImageUrl, setModelImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [color, setColor] = useState("");
@@ -46,7 +54,11 @@ export default function RegularCharmApp() {
   useEffect(() => {
     const loadSamples = () => {
       try {
-        const userGenerations = localStorage.getItem(STORAGE_KEYS.REGULAR);
+        const storageKey = isDebugMode
+          ? `debug_${STORAGE_KEYS.REGULAR}`
+          : STORAGE_KEYS.REGULAR;
+
+        const userGenerations = localStorage.getItem(storageKey);
         const userSamples = userGenerations ? JSON.parse(userGenerations) : [];
         setSamples([...userSamples, ...REGULAR_CHARM_SAMPLES]);
 
@@ -59,7 +71,20 @@ export default function RegularCharmApp() {
       }
     };
     loadSamples();
-  }, [sessionId]);
+  }, [sessionId, isDebugMode]);
+
+  // Set initial model image in debug mode
+  useEffect(() => {
+    if (isDebugMode && samples.length > 0 && !modelImageUrl) {
+      // Find the first sample with a modelUrl
+      const sampleWithModel = samples.find((s) => s.modelUrl);
+      if (sampleWithModel) {
+        setModelImageUrl(
+          "https://cdn.shopify.com/s/files/1/0484/1429/4167/files/bee.png?v=1772190426",
+        );
+      }
+    }
+  }, [samples, modelImageUrl]);
 
   // Carousel animation
   useEffect(() => {
@@ -76,35 +101,63 @@ export default function RegularCharmApp() {
         } while (next.url === imageUrl && samples.length > 1);
         if (detailInput) detailInput.placeholder = next.prompt;
         setImageUrl(next.url);
+        // if (isDebugMode && next.modelUrl) {
+        //   setModelImageUrl(next.modelUrl);
+        // }
       }, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [imageUrl, samples, isPaused]);
+  }, [imageUrl, samples, isPaused, isDebugMode]);
 
   // Use the charm generation hook
-  useCharmGeneration({
-    samples,
-    generationCount,
-    sessionId,
-    setLoading,
-    setError,
-    setImageUrl,
-    setIsPaused,
-    setGenerationCount,
-    setSamples,
-    setColor,
-    loadingRef,
-    generationStartTimeRef,
-    trackEvent,
-    storageKey: STORAGE_KEYS.REGULAR,
-  });
+  if (isDebugMode) {
+    useCharmGenerationDebug({
+      samples,
+      generationCount,
+      sessionId,
+      setLoading,
+      setError,
+      setImageUrl,
+      setModelImageUrl,
+      setIsPaused,
+      setGenerationCount,
+      setSamples,
+      setColor,
+      loadingRef,
+      generationStartTimeRef,
+      trackEvent,
+      storageKey: STORAGE_KEYS.REGULAR,
+    });
+  } else {
+    useCharmGeneration({
+      samples,
+      generationCount,
+      sessionId,
+      setLoading,
+      setError,
+      setImageUrl,
+      setIsPaused,
+      setGenerationCount,
+      setSamples,
+      setColor,
+      loadingRef,
+      generationStartTimeRef,
+      trackEvent,
+      storageKey: STORAGE_KEYS.REGULAR,
+    });
+  }
 
   // Sample click handler
   const handleSampleClick = (sample) => {
     if (loadingRef.current) return;
     setImageUrl(sample.url);
+    if (sample.modelUrl && isDebugMode) {
+      // setModelImageUrl(sample.modelUrl);
+    } else {
+      // setModelImageUrl("");
+    }
     setIsPaused(true);
     const input = document.querySelector(".custom-name-input");
     if (input) input.value = sample.prompt;
@@ -122,12 +175,22 @@ export default function RegularCharmApp() {
 
   return (
     <div style={{ width: "100%" }}>
-      <CharmPreview
-        imageUrl={imageUrl}
-        loading={loading}
-        error={error}
-        color={color}
-      />
+      {isDebugMode ? (
+        <CharmPreviewDebug
+          imageUrl={imageUrl}
+          modelImageUrl={modelImageUrl}
+          loading={loading}
+          error={error}
+          color={color}
+        />
+      ) : (
+        <CharmPreview
+          imageUrl={imageUrl}
+          loading={loading}
+          error={error}
+          color={color}
+        />
+      )}
       <SampleGallery
         samples={samples}
         imageUrl={imageUrl}

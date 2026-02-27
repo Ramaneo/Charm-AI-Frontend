@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { createButtonLoadingHandler } from "../utils/buttonLoading";
 import { saveSessionData } from "../utils/session";
 
-export function useCharmGeneration({
+export function usePetCharmGeneration({
   samples,
   generationCount,
   sessionId,
@@ -17,12 +17,11 @@ export function useCharmGeneration({
   generationStartTimeRef,
   trackEvent,
   storageKey,
-  transformPrompt = (value) => value, // Optional prompt transformer for birthday charms
 }) {
   useEffect(() => {
     const btn = document.querySelector(".generate-btn");
-    const input = document.querySelector(".custom-name-input");
-    if (!btn || !input) return;
+    const fileInput = document.querySelector("#pet-image");
+    if (!btn || !fileInput) return;
 
     const setButtonLoading = createButtonLoadingHandler();
 
@@ -32,8 +31,11 @@ export function useCharmGeneration({
       setLoading(true);
       setButtonLoading(btn, true);
       setError("");
-      const value = input.value.trim();
-      if (!value) {
+
+      // Check if a file is selected
+      const file = fileInput.files?.[0];
+      if (!file) {
+        setError("Please upload an image of your pet.");
         setLoading(false);
         setButtonLoading(btn, false);
         loadingRef.current = false;
@@ -43,24 +45,24 @@ export function useCharmGeneration({
       const startTime = Date.now();
       generationStartTimeRef.current = startTime;
 
-      const finalPrompt = transformPrompt(value);
+      const finalPrompt = "the head of the pet in the attached image";
 
       trackEvent("charm_generation_start", {
         prompt: finalPrompt,
+        has_image: true,
       });
-      const requestParams = new URLSearchParams({ input: finalPrompt });
-      const searchParams = new URLSearchParams(
-        typeof window !== "undefined" ? window.location.search : "",
-      );
-      const charmDebug = searchParams.get("charmDebug");
-      const isDebugMode = charmDebug !== null;
-      if (charmDebug !== null) {
-        requestParams.set("charmDebug", charmDebug);
-      }
-      const apiUrl = `/apps/general/charm-image?${requestParams.toString()}`;
 
       try {
-        const res = await fetch(apiUrl);
+        // Create FormData to send the image
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("input", finalPrompt);
+
+        const res = await fetch("/apps/general/charm-image", {
+          method: "POST",
+          body: formData,
+        });
+
         const generationTime = Date.now() - startTime;
 
         if (res.status === 429) {
@@ -84,54 +86,36 @@ export function useCharmGeneration({
         const newCount = generationCount + 1;
         setGenerationCount(newCount);
 
-        const sessionStorageKey = isDebugMode
-          ? `debug_${sessionId}`
-          : sessionId;
-        saveSessionData(sessionStorageKey, newCount);
+        saveSessionData(sessionId, newCount);
 
         trackEvent("charm_generation_success", {
           prompt: finalPrompt,
           generation_time_ms: generationTime,
+          has_image: true,
         });
 
-        const promptExists = samples.some(
-          (s) => s.prompt.toLowerCase() === finalPrompt.toLowerCase(),
-        );
-        if (!promptExists) {
-          const folder = isDebugMode ? "user_charms_debug" : "user_charms";
-          const newSample = {
-            url: `https://firebasestorage.googleapis.com/v0/b/kutezadmin.appspot.com/o/${folder}%2F${encodeURIComponent(
-              finalPrompt,
-            )}.png?alt=media&token=${encodeURIComponent(finalPrompt)}`,
-            prompt: finalPrompt,
-          };
+        const newSample = {
+          url: `https://firebasestorage.googleapis.com/v0/b/kutezadmin.appspot.com/o/user_charms%2F${encodeURIComponent(
+            finalPrompt,
+          )}.png?alt=media&token=${encodeURIComponent(finalPrompt)}`,
+          prompt: finalPrompt,
+        };
 
-          setSamples((prev) => [newSample, ...prev]);
+        setSamples((prev) => [newSample, ...prev]);
 
-          try {
-            const debugStorageKey = isDebugMode
-              ? `debug_${storageKey}`
-              : storageKey;
-            const userGenerations = localStorage.getItem(debugStorageKey);
-            const existingUserSamples = userGenerations
-              ? JSON.parse(userGenerations)
-              : [];
-            const updatedUserSamples = [newSample, ...existingUserSamples];
-            localStorage.setItem(
-              debugStorageKey,
-              JSON.stringify(updatedUserSamples),
-            );
+        try {
+          const userGenerations = localStorage.getItem(storageKey);
+          const existingUserSamples = userGenerations
+            ? JSON.parse(userGenerations)
+            : [];
+          const updatedUserSamples = [newSample, ...existingUserSamples];
+          localStorage.setItem(storageKey, JSON.stringify(updatedUserSamples));
 
-            trackEvent("new_charm_added_to_gallery", {
-              prompt: finalPrompt,
-            });
-          } catch (e) {
-            console.error("Error saving to localStorage:", e);
-          }
-        } else {
-          trackEvent("charm_regenerated", {
+          trackEvent("new_charm_added_to_gallery", {
             prompt: finalPrompt,
           });
+        } catch (e) {
+          console.error("Error saving to localStorage:", e);
         }
       } catch (e) {
         const generationTime = Date.now() - startTime;
@@ -188,6 +172,5 @@ export function useCharmGeneration({
     generationStartTimeRef,
     trackEvent,
     storageKey,
-    transformPrompt,
   ]);
 }

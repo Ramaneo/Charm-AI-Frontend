@@ -1,6 +1,8 @@
 import React from "react";
 import RegularCharmApp from "./RegularCharmApp";
 import BirthdayCharmApp from "./BirthdayCharmApp";
+import ZodiacCharmApp from "./ZodiacCharmApp";
+import PetCharmApp from "./PetCharmApp";
 
 export default function App() {
   // Check if this is the birthday charm page
@@ -8,10 +10,24 @@ export default function App() {
     typeof window !== "undefined" &&
     (window.location.pathname.includes("design-your-own-birthday-charm") ||
       window.location.href.includes("design-your-own-birthday-charm"));
+  const isZodiacCharmPage =
+    typeof window !== "undefined" &&
+    (window.location.pathname.includes("design-your-own-zodiac-charm") ||
+      window.location.href.includes("design-your-own-zodiac-charm"));
+  const isPetCharmPage =
+    typeof window !== "undefined" &&
+    (window.location.pathname.includes("design-your-own-pet-charm") ||
+      window.location.href.includes("design-your-own-pet-charm"));
 
   // Render the appropriate component based on the page
   if (isBirthdayCharmPage) {
     return <BirthdayCharmApp />;
+  }
+  if (isZodiacCharmPage) {
+    return <ZodiacCharmApp />;
+  }
+  if (isPetCharmPage) {
+    return <PetCharmApp />;
   }
 
   return <RegularCharmApp />;

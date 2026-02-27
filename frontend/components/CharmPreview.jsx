@@ -2,6 +2,18 @@ import React from "react";
 import Aurora from "./Aurora";
 
 export default function CharmPreview({ imageUrl, loading, error, color }) {
+  const isDebugMode =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("charmDebug");
+
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+
+  const getTransform = () => {
+    return isMobile
+      ? "scale(1.7) translate(0, -30px)"
+      : "scale(1.3) translate(0, -60px)";
+  };
+
   return (
     <div
       style={{
@@ -10,6 +22,7 @@ export default function CharmPreview({ imageUrl, loading, error, color }) {
         minHeight: 0,
         overflow: "hidden",
         aspectRatio: "1.35",
+        // aspectRatio: isDebugMode ? "1" : "1.35",
       }}
     >
       <div
@@ -48,6 +61,7 @@ export default function CharmPreview({ imageUrl, loading, error, color }) {
           top: "0",
           height: "100%",
           objectPosition: "bottom",
+          transform: getTransform(),
         }}
       />
     </div>
