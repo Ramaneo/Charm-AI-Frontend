@@ -80,7 +80,8 @@ export default function CharmPreview({
           aspectRatio: isMobile && !isFixed ? 1 : "1.35",
           zIndex: 8,
           backgroundColor: "white",
-          // transition: "all 0.3s ease",
+          transition:
+            "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           flex: isMobile ? 0.5 : 1,
         }}
       >

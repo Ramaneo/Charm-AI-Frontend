@@ -2,14 +2,13 @@ import { useEffect, useRef } from "react";
 import { createButtonLoadingHandler } from "../utils/buttonLoading";
 import { saveSessionData } from "../utils/session";
 
-export function useCharmGenerationDebug({
+export function useCharmGenerationOld({
   samples,
   generationCount,
   sessionId,
   setLoading,
   setError,
   setImageUrl,
-  setModelImageUrl,
   setIsPaused,
   setGenerationCount,
   setSamples,
@@ -18,7 +17,7 @@ export function useCharmGenerationDebug({
   generationStartTimeRef,
   trackEvent,
   storageKey,
-  transformPrompt = (value) => value,
+  transformPrompt = (value) => value, // Optional prompt transformer for birthday charms
 }) {
   useEffect(() => {
     const btn = document.querySelector(".generate-btn");
@@ -55,18 +54,13 @@ export function useCharmGenerationDebug({
       );
       const charmDebug = searchParams.get("charmDebug");
       const isDebugMode = charmDebug !== null;
-      // if (charmDebug !== null) {
-      //   requestParams.set("charmDebug", charmDebug);
-      // }
-      const apiUrl = `/apps/general/charm-image-with-model?${requestParams.toString()}`;
-      // const apiUrl = `https://eellike-deictically-ayden.ngrok-free.dev/charm-image-with-model?${requestParams.toString()}`;
+      if (charmDebug !== null) {
+        requestParams.set("charmDebug", charmDebug);
+      }
+      const apiUrl = `/apps/general/charm-image?${requestParams.toString()}`;
 
       try {
-        const res = await fetch(apiUrl, {
-          headers: {
-            "ngrok-skip-browser-warning": "true",
-          },
-        });
+        const res = await fetch(apiUrl);
         const generationTime = Date.now() - startTime;
 
         if (res.status === 429) {
@@ -83,15 +77,8 @@ export function useCharmGenerationDebug({
           return;
         }
         if (!res.ok) throw new Error("Failed to fetch image");
-
-        const data = await res.json();
-
-        if (!data.success) {
-          throw new Error("Generation failed");
-        }
-
-        setImageUrl(data.charmImage.url);
-        // setModelImageUrl(data.modelImage.url);
+        const returnedUrl = res.url;
+        setImageUrl(returnedUrl);
         setIsPaused(true);
 
         const newCount = generationCount + 1;
@@ -111,9 +98,11 @@ export function useCharmGenerationDebug({
           (s) => s.prompt.toLowerCase() === finalPrompt.toLowerCase(),
         );
         if (!promptExists) {
+          const folder = isDebugMode ? "user_charms_debug" : "user_charms";
           const newSample = {
-            url: data.charmImage.url,
-            // modelUrl: data.modelImage.url,
+            url: `https://firebasestorage.googleapis.com/v0/b/kutezadmin.appspot.com/o/${folder}%2F${encodeURIComponent(
+              finalPrompt,
+            )}.png?alt=media&token=${encodeURIComponent(finalPrompt)}`,
             prompt: finalPrompt,
           };
 
@@ -191,7 +180,6 @@ export function useCharmGenerationDebug({
     setLoading,
     setError,
     setImageUrl,
-    setModelImageUrl,
     setIsPaused,
     setGenerationCount,
     setSamples,

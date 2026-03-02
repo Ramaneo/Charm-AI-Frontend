@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
+import CharmPreviewOld from "./CharmPreviewOld.jsx";
 import CharmPreview from "./CharmPreview.jsx";
-import CharmPreviewDebug from "./CharmPreviewDebug.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";
+import { useCharmGenerationOld } from "./hooks/useCharmGenerationOld.js";
 import { useCharmGeneration } from "./hooks/useCharmGeneration.js";
-import { useCharmGenerationDebug } from "./hooks/useCharmGenerationDebug.js";
 import {
   REGULAR_CHARM_SAMPLES,
   STORAGE_KEYS,
@@ -75,7 +75,7 @@ export default function RegularCharmApp() {
 
   // Set initial model image in debug mode
   useEffect(() => {
-    if (isDebugMode && samples.length > 0 && !modelImageUrl) {
+    if (samples.length > 0 && !modelImageUrl) {
       // Find the first sample with a modelUrl
       const sampleWithModel = samples.find((s) => s.modelUrl);
       if (sampleWithModel) {
@@ -113,14 +113,13 @@ export default function RegularCharmApp() {
 
   // Use the charm generation hook
   if (isDebugMode) {
-    useCharmGenerationDebug({
+    useCharmGenerationOld({
       samples,
       generationCount,
       sessionId,
       setLoading,
       setError,
       setImageUrl,
-      setModelImageUrl,
       setIsPaused,
       setGenerationCount,
       setSamples,
@@ -138,6 +137,7 @@ export default function RegularCharmApp() {
       setLoading,
       setError,
       setImageUrl,
+      setModelImageUrl,
       setIsPaused,
       setGenerationCount,
       setSamples,
@@ -176,9 +176,8 @@ export default function RegularCharmApp() {
   return (
     <div style={{ width: "100%" }}>
       {isDebugMode ? (
-        <CharmPreviewDebug
+        <CharmPreviewOld
           imageUrl={imageUrl}
-          modelImageUrl={modelImageUrl}
           loading={loading}
           error={error}
           color={color}
@@ -186,6 +185,7 @@ export default function RegularCharmApp() {
       ) : (
         <CharmPreview
           imageUrl={imageUrl}
+          modelImageUrl={modelImageUrl}
           loading={loading}
           error={error}
           color={color}

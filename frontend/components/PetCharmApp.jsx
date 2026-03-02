@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import CharmPreview from "./CharmPreview.jsx";
+import CharmPreview from "./CharmPreviewOld.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";

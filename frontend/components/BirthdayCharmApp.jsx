@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import CharmPreview from "./CharmPreview.jsx";
+import CharmPreview from "./CharmPreviewOld.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";
-import { useCharmGeneration } from "./hooks/useCharmGeneration.js";
+import { useCharmGenerationOld } from "./hooks/useCharmGenerationOld.js";
 import {
   BIRTHDAY_CHARM_SAMPLES,
   STORAGE_KEYS,
@@ -98,7 +98,7 @@ export default function BirthdayCharmApp() {
   }, [imageUrl, samples, isPaused]);
 
   // Use the charm generation hook with birthday prompt transformer
-  useCharmGeneration({
+  useCharmGenerationOld({
     samples,
     generationCount,
     sessionId,

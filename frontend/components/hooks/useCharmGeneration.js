@@ -9,6 +9,7 @@ export function useCharmGeneration({
   setLoading,
   setError,
   setImageUrl,
+  setModelImageUrl,
   setIsPaused,
   setGenerationCount,
   setSamples,
@@ -17,7 +18,7 @@ export function useCharmGeneration({
   generationStartTimeRef,
   trackEvent,
   storageKey,
-  transformPrompt = (value) => value, // Optional prompt transformer for birthday charms
+  transformPrompt = (value) => value,
 }) {
   useEffect(() => {
     const btn = document.querySelector(".generate-btn");
@@ -54,13 +55,18 @@ export function useCharmGeneration({
       );
       const charmDebug = searchParams.get("charmDebug");
       const isDebugMode = charmDebug !== null;
-      if (charmDebug !== null) {
-        requestParams.set("charmDebug", charmDebug);
-      }
-      const apiUrl = `/apps/general/charm-image?${requestParams.toString()}`;
+      // if (charmDebug !== null) {
+      //   requestParams.set("charmDebug", charmDebug);
+      // }
+      const apiUrl = `/apps/general/charm-image-with-model?${requestParams.toString()}`;
+      // const apiUrl = `https://eellike-deictically-ayden.ngrok-free.dev/charm-image-with-model?${requestParams.toString()}`;
 
       try {
-        const res = await fetch(apiUrl);
+        const res = await fetch(apiUrl, {
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+          },
+        });
         const generationTime = Date.now() - startTime;
 
         if (res.status === 429) {
@@ -77,8 +83,15 @@ export function useCharmGeneration({
           return;
         }
         if (!res.ok) throw new Error("Failed to fetch image");
-        const returnedUrl = res.url;
-        setImageUrl(returnedUrl);
+
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error("Generation failed");
+        }
+
+        setImageUrl(data.charmImage.url);
+        // setModelImageUrl(data.modelImage.url);
         setIsPaused(true);
 
         const newCount = generationCount + 1;
@@ -98,11 +111,9 @@ export function useCharmGeneration({
           (s) => s.prompt.toLowerCase() === finalPrompt.toLowerCase(),
         );
         if (!promptExists) {
-          const folder = isDebugMode ? "user_charms_debug" : "user_charms";
           const newSample = {
-            url: `https://firebasestorage.googleapis.com/v0/b/kutezadmin.appspot.com/o/${folder}%2F${encodeURIComponent(
-              finalPrompt,
-            )}.png?alt=media&token=${encodeURIComponent(finalPrompt)}`,
+            url: data.charmImage.url,
+            // modelUrl: data.modelImage.url,
             prompt: finalPrompt,
           };
 
@@ -180,6 +191,7 @@ export function useCharmGeneration({
     setLoading,
     setError,
     setImageUrl,
+    setModelImageUrl,
     setIsPaused,
     setGenerationCount,
     setSamples,

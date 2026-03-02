@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import CharmPreview from "./CharmPreview.jsx";
+import CharmPreview from "./CharmPreviewOld.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";
-import { useCharmGeneration } from "./hooks/useCharmGeneration.js";
+import { useCharmGenerationOld } from "./hooks/useCharmGenerationOld.js";
 import {
   ZODIAC_CHARM_SAMPLES,
   STORAGE_KEYS,
@@ -137,6 +137,7 @@ export default function ZodiacCharmApp() {
     setLoading,
     setError,
     setImageUrl,
+    setModelImageUrl,
     setIsPaused,
     setGenerationCount,
     setSamples,
@@ -144,8 +145,7 @@ export default function ZodiacCharmApp() {
     loadingRef,
     generationStartTimeRef,
     trackEvent,
-    storageKey: STORAGE_KEYS.ZODIAC,
-    transformPrompt,
+    storageKey: STORAGE_KEYS.REGULAR,
   });
 
   // Sample click handler
@@ -189,6 +189,7 @@ export default function ZodiacCharmApp() {
     <div style={{ width: "100%" }}>
       <CharmPreview
         imageUrl={imageUrl}
+        modelImageUrl={modelImageUrl}
         loading={loading}
         error={error}
         color={color}

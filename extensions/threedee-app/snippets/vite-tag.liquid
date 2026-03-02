@@ -6,7 +6,7 @@
 {% if path == "/frontend/entrypoints/theme.css" or path == "theme.css" %}
   {{ 'theme-ea8b0d02.css' | asset_url | split: '?' | first | stylesheet_tag: preload: preload_stylesheet }}
 {% elsif path == "/frontend/entrypoints/theme.jsx" or path == "theme.jsx" %}
-  <script src="{{ 'theme-42bf664b.js' | asset_url | split: '?' | first }}" type="module" crossorigin="anonymous"></script>
+  <script src="{{ 'theme-cc42eef2.js' | asset_url | split: '?' | first }}" type="module" crossorigin="anonymous"></script>
   {{ 'theme-d4b628c6.css' | asset_url | split: '?' | first | stylesheet_tag: preload: preload_stylesheet }}
   {{ 'theme-ea8b0d02.css' | asset_url | split: '?' | first | stylesheet_tag: preload: preload_stylesheet }}
 {% endif %}
