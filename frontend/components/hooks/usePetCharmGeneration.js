@@ -55,10 +55,9 @@ export function usePetCharmGeneration({
       try {
         // Create FormData to send the image
         const formData = new FormData();
-        formData.append("image", file);
-        formData.append("input", finalPrompt);
+        formData.append("file", file);
 
-        const res = await fetch("/apps/general/charm-image", {
+        const res = await fetch("/apps/general/charm-image-from-photo", {
           method: "POST",
           body: formData,
         });
@@ -79,7 +78,17 @@ export function usePetCharmGeneration({
           return;
         }
         if (!res.ok) throw new Error("Failed to fetch image");
-        const returnedUrl = res.url;
+
+        const responseData = await res.json();
+        if (!responseData.success) {
+          throw new Error(responseData.error || "Failed to generate image");
+        }
+
+        const returnedUrl = responseData.charmImage.url;
+
+        document.querySelector("#your-image-url").value = returnedUrl;
+        document.querySelector("#your-charm-prompt").value = returnedUrl;
+
         setImageUrl(returnedUrl);
         setIsPaused(true);
 
@@ -95,9 +104,7 @@ export function usePetCharmGeneration({
         });
 
         const newSample = {
-          url: `https://firebasestorage.googleapis.com/v0/b/kutezadmin.appspot.com/o/user_charms%2F${encodeURIComponent(
-            finalPrompt,
-          )}.png?alt=media&token=${encodeURIComponent(finalPrompt)}`,
+          url: returnedUrl,
           prompt: finalPrompt,
         };
 

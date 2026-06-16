@@ -53,12 +53,16 @@ export function useCharmGeneration({
       const searchParams = new URLSearchParams(
         typeof window !== "undefined" ? window.location.search : "",
       );
-      const charmDebug = searchParams.get("charmDebug");
-      const isDebugMode = charmDebug !== null;
-      // if (charmDebug !== null) {
-      //   requestParams.set("charmDebug", charmDebug);
-      // }
-      const apiUrl = `/apps/general/charm-image-with-model?${requestParams.toString()}`;
+      const debug = searchParams.get("debug");
+      const isDebugMode = debug !== null;
+      if (debug !== null) {
+        requestParams.set("debug", debug);
+      }
+      // const apiUrl = `/apps/general/charm-image-with-model?${requestParams.toString()}`;
+      let apiUrl = `https://kutezadmin.uc.r.appspot.com/charm-image-with-model?${requestParams.toString()}`;
+      if (isDebugMode) {
+        apiUrl = `https://kutezadmin.uc.r.appspot.com/charm-image?${requestParams.toString()}`;
+      }
       // const apiUrl = `https://eellike-deictically-ayden.ngrok-free.dev/charm-image-with-model?${requestParams.toString()}`;
 
       try {
@@ -90,15 +94,29 @@ export function useCharmGeneration({
           throw new Error("Generation failed");
         }
 
+        document.querySelector("#your-image-url").value = data.charmImage.url;
+        document.querySelector("#your-charm-prompt").value = finalPrompt;
+
         setImageUrl(data.charmImage.url);
         // setModelImageUrl(data.modelImage.url);
         setIsPaused(true);
+
+        const card = document.querySelector(".generate-ai-card");
+        if (card) {
+          card.style.border = "2px solid rgba(110, 231, 183, 0.50)";
+          card.style.background = "rgba(236, 253, 245, 0.30)";
+        }
+
+        const status = document.querySelector(".generate-ai-card__status");
+        if (status) {
+          status.style.display = ""; // Remove the inline display: none
+        }
 
         const newCount = generationCount + 1;
         setGenerationCount(newCount);
 
         const sessionStorageKey = isDebugMode
-          ? `debug_${sessionId}`
+          ? `debug${debug}_${sessionId}`
           : sessionId;
         saveSessionData(sessionStorageKey, newCount);
 
@@ -121,7 +139,7 @@ export function useCharmGeneration({
 
           try {
             const debugStorageKey = isDebugMode
-              ? `debug_${storageKey}`
+              ? `debug${debug}_${storageKey}`
               : storageKey;
             const userGenerations = localStorage.getItem(debugStorageKey);
             const existingUserSamples = userGenerations

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import CharmPreview from "./CharmPreviewOld.jsx";
+import CharmPreview from "./CharmPreview.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";
-import { useCharmGenerationOld } from "./hooks/useCharmGenerationOld.js";
+import { useCharmGeneration } from "./hooks/useCharmGeneration.js";
 import {
   BIRTHDAY_CHARM_SAMPLES,
   STORAGE_KEYS,
@@ -14,6 +14,7 @@ import {
 
 export default function BirthdayCharmApp() {
   const [imageUrl, setImageUrl] = useState(BLUEPRINT_URL);
+  const [modelImageUrl, setModelImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [color, setColor] = useState("");
@@ -75,6 +76,18 @@ export default function BirthdayCharmApp() {
     loadSamples();
   }, [sessionId]);
 
+  // Set initial model image in debug mode
+  useEffect(() => {
+    if (samples.length > 0 && !modelImageUrl) {
+      const sampleWithModel = samples.find((s) => s.modelUrl);
+      if (sampleWithModel) {
+        setModelImageUrl(
+          "https://cdn.shopify.com/s/files/1/0484/1429/4167/files/bee.png?v=1772190426",
+        );
+      }
+    }
+  }, [samples, modelImageUrl]);
+
   // Carousel animation
   useEffect(() => {
     const detailInput = document.querySelector(".custom-name-input");
@@ -98,7 +111,7 @@ export default function BirthdayCharmApp() {
   }, [imageUrl, samples, isPaused]);
 
   // Use the charm generation hook with birthday prompt transformer
-  useCharmGenerationOld({
+  useCharmGeneration({
     samples,
     generationCount,
     sessionId,
@@ -149,6 +162,7 @@ export default function BirthdayCharmApp() {
     <div style={{ width: "100%" }}>
       <CharmPreview
         imageUrl={imageUrl}
+        modelImageUrl={modelImageUrl}
         loading={loading}
         error={error}
         color={color}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import CharmPreview from "./CharmPreviewOld.jsx";
+import CharmPreview from "./CharmPreview.jsx";
+import CharmPreviewTwo from "./CharmPreviewTwo.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";
@@ -12,7 +13,14 @@ import {
 } from "./utils/constants.js";
 
 export default function PetCharmApp() {
+  const searchParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : "",
+  );
+  const isDebugMode = searchParams.has("debug");
+
   const [imageUrl, setImageUrl] = useState(BLUEPRINT_URL);
+  const [modelImageUrl, setModelImageUrl] = useState("");
+  const [modelLoading, setModelLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [color, setColor] = useState("");
@@ -43,6 +51,18 @@ export default function PetCharmApp() {
     }
   }, [loading]);
 
+  useEffect(() => {
+    if (samples.length > 0 && !modelImageUrl) {
+      // Find the first sample with a modelUrl
+      const sampleWithModel = samples.find((s) => s.modelUrl);
+      if (sampleWithModel) {
+        setModelImageUrl(
+          "https://storage.googleapis.com/kutezadmin.appspot.com/user_model_photos_v3/hamster.png",
+        );
+      }
+    }
+  }, [samples, modelImageUrl]);
+
   // Load samples
   useEffect(() => {
     const loadSamples = () => {
@@ -63,25 +83,25 @@ export default function PetCharmApp() {
   }, [sessionId]);
 
   // Carousel animation
-  useEffect(() => {
-    if (samples.length === 0 || isPaused) return;
+  // useEffect(() => {
+  //   if (samples.length === 0 || isPaused) return;
 
-    const sampleUrls = samples.map((s) => s.url);
-    let interval;
-    if (imageUrl === BLUEPRINT_URL || sampleUrls.includes(imageUrl)) {
-      interval = setInterval(() => {
-        let next;
-        do {
-          next = samples[Math.floor(Math.random() * samples.length)];
-        } while (next.url === imageUrl && samples.length > 1);
+  //   const sampleUrls = samples.map((s) => s.url);
+  //   let interval;
+  //   if (imageUrl === BLUEPRINT_URL || sampleUrls.includes(imageUrl)) {
+  //     interval = setInterval(() => {
+  //       let next;
+  //       do {
+  //         next = samples[Math.floor(Math.random() * samples.length)];
+  //       } while (next.url === imageUrl && samples.length > 1);
 
-        setImageUrl(next.url);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [imageUrl, samples, isPaused]);
+  //       setImageUrl(next.url);
+  //     }, 1000);
+  //   }
+  //   return () => {
+  //     if (interval) clearInterval(interval);
+  //   };
+  // }, [imageUrl, samples, isPaused]);
 
   // Use the pet charm generation hook with image upload
   usePetCharmGeneration({
@@ -120,17 +140,28 @@ export default function PetCharmApp() {
 
   return (
     <div style={{ width: "100%" }}>
-      <CharmPreview
+      {/* {isDebugMode ? ( */}
+      <CharmPreviewTwo
         imageUrl={imageUrl}
+        modelImageUrl={modelImageUrl}
+        modelLoading={modelLoading}
         loading={loading}
         error={error}
         color={color}
       />
-      <SampleGallery
+      {/* ) : (
+          <CharmPreview
+            imageUrl={imageUrl}
+            loading={loading}
+            error={error}
+            color={color}
+          />
+        )} */}
+      {/* <SampleGallery
         samples={samples}
         imageUrl={imageUrl}
         onSampleClick={handleSampleClick}
-      />
+      /> */}
     </div>
   );
 }

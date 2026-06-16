@@ -1,27 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import CharmPreviewOld from "./CharmPreviewOld.jsx";
+import CharmPreviewTwo from "./CharmPreviewTwo.jsx";
 import CharmPreview from "./CharmPreview.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";
-import { useCharmGenerationOld } from "./hooks/useCharmGenerationOld.js";
 import { useCharmGeneration } from "./hooks/useCharmGeneration.js";
 import {
   REGULAR_CHARM_SAMPLES,
   STORAGE_KEYS,
   BLUEPRINT_URL,
 } from "./utils/constants.js";
+import { useCharmGenerationV3 } from "./hooks/useCharmGenerationV3.js";
 
 export default function RegularCharmApp() {
   const searchParams = new URLSearchParams(
     typeof window !== "undefined" ? window.location.search : "",
   );
-  const isDebugMode = searchParams.has("charmDebug");
+  const isDebugMode = searchParams.has("debug");
 
   const [imageUrl, setImageUrl] = useState(BLUEPRINT_URL);
   const [modelImageUrl, setModelImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modelLoading, setModelLoading] = useState(false);
   const [error, setError] = useState("");
   const [color, setColor] = useState("");
   const loadingRef = useRef(false);
@@ -60,7 +61,8 @@ export default function RegularCharmApp() {
 
         const userGenerations = localStorage.getItem(storageKey);
         const userSamples = userGenerations ? JSON.parse(userGenerations) : [];
-        setSamples([...userSamples, ...REGULAR_CHARM_SAMPLES]);
+        // setSamples([...userSamples, ...REGULAR_CHARM_SAMPLES]);
+        setSamples([...REGULAR_CHARM_SAMPLES]);
 
         if (sessionId) {
           trackEvent("gallery_loaded", {});
@@ -112,42 +114,45 @@ export default function RegularCharmApp() {
   }, [imageUrl, samples, isPaused, isDebugMode]);
 
   // Use the charm generation hook
-  if (isDebugMode) {
-    useCharmGenerationOld({
-      samples,
-      generationCount,
-      sessionId,
-      setLoading,
-      setError,
-      setImageUrl,
-      setIsPaused,
-      setGenerationCount,
-      setSamples,
-      setColor,
-      loadingRef,
-      generationStartTimeRef,
-      trackEvent,
-      storageKey: STORAGE_KEYS.REGULAR,
-    });
-  } else {
-    useCharmGeneration({
-      samples,
-      generationCount,
-      sessionId,
-      setLoading,
-      setError,
-      setImageUrl,
-      setModelImageUrl,
-      setIsPaused,
-      setGenerationCount,
-      setSamples,
-      setColor,
-      loadingRef,
-      generationStartTimeRef,
-      trackEvent,
-      storageKey: STORAGE_KEYS.REGULAR,
-    });
-  }
+  // if (isDebugMode) {
+  useCharmGenerationV3({
+    samples,
+    generationCount,
+    sessionId,
+    setLoading,
+    setModelLoading,
+    setError,
+    setImageUrl,
+    setModelImageUrl,
+    setIsPaused,
+    setGenerationCount,
+    setSamples,
+    setColor,
+    loadingRef,
+    generationStartTimeRef,
+    trackEvent,
+    storageKey: STORAGE_KEYS.REGULAR,
+  });
+  // } else {
+  //   useCharmGeneration({
+  //     samples,
+  //     generationCount,
+  //     sessionId,
+  //     setLoading,
+  //     setModelLoading,
+  //     setError,
+  //     setImageUrl,
+  //     setModelImageUrl,
+  //     setIsPaused,
+  //     setGenerationCount,
+  //     setSamples,
+  //     setColor,
+  //     loadingRef,
+  //     generationStartTimeRef,
+  //     trackEvent,
+  //     storageKey: STORAGE_KEYS.REGULAR,
+  //   });
+  // }
 
   // Sample click handler
   const handleSampleClick = (sample) => {
@@ -175,27 +180,31 @@ export default function RegularCharmApp() {
 
   return (
     <div style={{ width: "100%" }}>
-      {isDebugMode ? (
-        <CharmPreviewOld
-          imageUrl={imageUrl}
-          loading={loading}
-          error={error}
-          color={color}
-        />
-      ) : (
-        <CharmPreview
-          imageUrl={imageUrl}
-          modelImageUrl={modelImageUrl}
-          loading={loading}
-          error={error}
-          color={color}
-        />
-      )}
-      <SampleGallery
-        samples={samples}
+      {/* {isDebugMode ? ( */}
+      <CharmPreviewTwo
         imageUrl={imageUrl}
-        onSampleClick={handleSampleClick}
+        modelImageUrl={modelImageUrl}
+        loading={loading}
+        modelLoading={modelLoading}
+        error={error}
+        color={color}
       />
+      {/* ) : (
+         <CharmPreview
+           imageUrl={imageUrl}
+           modelImageUrl={modelImageUrl}
+           loading={loading}
+           error={error}
+           color={color}
+         />
+       )}
+       {!isDebugMode && (
+         <SampleGallery
+           samples={samples}
+           imageUrl={imageUrl}
+           onSampleClick={handleSampleClick}
+         />
+       )} */}
     </div>
   );
 }

@@ -1,20 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import CharmPreview from "./CharmPreviewOld.jsx";
+import CharmPreviewTwo from "./CharmPreviewTwo.jsx";
+import CharmPreview from "./CharmPreview.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
 import { initializeSession, loadSessionData } from "./utils/session.js";
-import { useCharmGenerationOld } from "./hooks/useCharmGenerationOld.js";
+import { useCharmGeneration } from "./hooks/useCharmGeneration.js";
 import {
   ZODIAC_CHARM_SAMPLES,
   STORAGE_KEYS,
   BLUEPRINT_URL,
   ZODIAC_SUFFIXES,
 } from "./utils/constants.js";
+import { useCharmGenerationV3 } from "./hooks/useCharmGenerationV3.js";
 
 export default function ZodiacCharmApp() {
+  const searchParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : "",
+  );
+  const isDebugMode = searchParams.has("debug");
+
   const [imageUrl, setImageUrl] = useState(BLUEPRINT_URL);
+  const [modelImageUrl, setModelImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modelLoading, setModelLoading] = useState(false);
   const [error, setError] = useState("");
   const [color, setColor] = useState("");
   const loadingRef = useRef(false);
@@ -48,15 +57,27 @@ export default function ZodiacCharmApp() {
 
     let prompt = "";
     if (zodiacSign) {
-      prompt += `${zodiacSign} zodiac`;
+      prompt += `${zodiacSign} Zodiac`;
     }
     if (risingSign) {
-      prompt += ` ${risingSign} rising zodiac`;
+      prompt += ` ${risingSign} Rising Zodiac`;
     }
     prompt += ` ${ZODIAC_SUFFIXES[currentSuffixIndex]}`;
 
     return prompt.trim();
   };
+
+  useEffect(() => {
+    if (samples.length > 0 && !modelImageUrl) {
+      // Find the first sample with a modelUrl
+      const sampleWithModel = samples.find((s) => s.modelUrl);
+      if (sampleWithModel) {
+        setModelImageUrl(
+          "https://storage.googleapis.com/kutezadmin.appspot.com/user_model_photos/Aries%20Zodiac%20Capricorn%20Rising%20Zodiac%20Spirit.png",
+        );
+      }
+    }
+  }, [samples, modelImageUrl]);
 
   // Initialize session
   useEffect(() => {
@@ -110,7 +131,7 @@ export default function ZodiacCharmApp() {
 
         // Extract zodiac signs from prompt and set placeholders
         const zodiacMatch = next.prompt.match(
-          /^(.+?)\s+zodiac(?:\s+(.+?)\s+rising\s+zodiac)?/,
+          /^(.+?)\s+zodiac(?:\s+(.+?)\s+rising\s+zodiac)?/i,
         );
         if (zodiacMatch) {
           if (zodiacInput && zodiacMatch[1]) {
@@ -130,23 +151,46 @@ export default function ZodiacCharmApp() {
   }, [imageUrl, samples, isPaused]);
 
   // Use the charm generation hook with birthday prompt transformer
-  useCharmGeneration({
-    samples,
-    generationCount,
-    sessionId,
-    setLoading,
-    setError,
-    setImageUrl,
-    setModelImageUrl,
-    setIsPaused,
-    setGenerationCount,
-    setSamples,
-    setColor,
-    loadingRef,
-    generationStartTimeRef,
-    trackEvent,
-    storageKey: STORAGE_KEYS.REGULAR,
-  });
+  if (isDebugMode) {
+    useCharmGenerationV3({
+      samples,
+      generationCount,
+      sessionId,
+      setLoading,
+      setModelLoading,
+      setError,
+      setImageUrl,
+      setModelImageUrl,
+      setIsPaused,
+      setGenerationCount,
+      setSamples,
+      setColor,
+      loadingRef,
+      generationStartTimeRef,
+      trackEvent,
+      storageKey: STORAGE_KEYS.REGULAR,
+      transformPrompt,
+    });
+  } else {
+    useCharmGeneration({
+      samples,
+      generationCount,
+      sessionId,
+      setLoading,
+      setError,
+      setImageUrl,
+      setModelImageUrl,
+      setIsPaused,
+      setGenerationCount,
+      setSamples,
+      setColor,
+      loadingRef,
+      generationStartTimeRef,
+      trackEvent,
+      storageKey: STORAGE_KEYS.ZODIAC,
+      transformPrompt,
+    });
+  }
 
   // Sample click handler
   const handleSampleClick = (sample) => {
@@ -156,7 +200,7 @@ export default function ZodiacCharmApp() {
 
     // Extract zodiac signs from prompt (format: "leo zodiac virgo rising zodiac aura")
     const zodiacMatch = sample.prompt.match(
-      /^(.+?)\s+zodiac(?:\s+(.+?)\s+rising\s+zodiac)?/,
+      /^(.+?)\s+zodiac(?:\s+(.+?)\s+rising\s+zodiac)?/i,
     );
 
     const zodiacInput = document.querySelector("#zodiac-sign");
@@ -187,18 +231,31 @@ export default function ZodiacCharmApp() {
 
   return (
     <div style={{ width: "100%" }}>
-      <CharmPreview
-        imageUrl={imageUrl}
-        modelImageUrl={modelImageUrl}
-        loading={loading}
-        error={error}
-        color={color}
-      />
-      <SampleGallery
-        samples={samples}
-        imageUrl={imageUrl}
-        onSampleClick={handleSampleClick}
-      />
+      {isDebugMode ? (
+        <CharmPreviewTwo
+          imageUrl={imageUrl}
+          modelImageUrl={modelImageUrl}
+          modelLoading={modelLoading}
+          loading={loading}
+          error={error}
+          color={color}
+        />
+      ) : (
+        <CharmPreview
+          imageUrl={imageUrl}
+          modelImageUrl={modelImageUrl}
+          loading={loading}
+          error={error}
+          color={color}
+        />
+      )}
+      {!isDebugMode && (
+        <SampleGallery
+          samples={samples}
+          imageUrl={imageUrl}
+          onSampleClick={handleSampleClick}
+        />
+      )}
     </div>
   );
 }
