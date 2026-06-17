@@ -184,7 +184,7 @@ export default function CharmPreview({
           </div>
           {error && <div style={{ color: "red", padding: "8px" }}>{error}</div>}
           <img
-            src={imageUrl + `?v=${Date.now()}`}
+            src={imageUrl}
             alt="Generated Charm"
             style={{
               maxWidth: "100%",
@@ -240,7 +240,7 @@ export default function CharmPreview({
             </div>
             {modelImageUrl && (
               <img
-                src={modelImageUrl + `?v=${Date.now()}`}
+                src={modelImageUrl}
                 alt="Model Reference"
                 style={{
                   maxWidth: "100%",

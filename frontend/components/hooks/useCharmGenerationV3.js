@@ -118,7 +118,7 @@ export function useCharmGenerationV3({
         document.querySelector("#your-image-url").value = data.charmImage.url;
         document.querySelector("#your-charm-prompt").value = finalPrompt;
 
-        setImageUrl(data.charmImage.url);
+        setImageUrl(`${data.charmImage.url}?v=${Date.now()}`);
         setLoading(false);
 
         try {
