@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import CharmPreviewTwo from "./CharmPreviewTwo.jsx";
+import CharmPreviewThree from "./CharmPreviewThree.jsx";
 import CharmPreview from "./CharmPreview.jsx";
 import SampleGallery from "./SampleGallery.jsx";
 import { createTrackEvent } from "./utils/analytics.js";
@@ -25,6 +26,7 @@ export default function RegularCharmApp() {
   const [modelLoading, setModelLoading] = useState(false);
   const [error, setError] = useState("");
   const [color, setColor] = useState("");
+  const [generatedPrompt, setGeneratedPrompt] = useState("");
   const loadingRef = useRef(false);
   const [samples, setSamples] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
@@ -128,6 +130,7 @@ export default function RegularCharmApp() {
     setGenerationCount,
     setSamples,
     setColor,
+    setGeneratedPrompt,
     loadingRef,
     generationStartTimeRef,
     trackEvent,
@@ -180,31 +183,15 @@ export default function RegularCharmApp() {
 
   return (
     <div style={{ width: "100%" }}>
-      {/* {isDebugMode ? ( */}
-      <CharmPreviewTwo
+      <CharmPreviewThree
         imageUrl={imageUrl}
         modelImageUrl={modelImageUrl}
         loading={loading}
         modelLoading={modelLoading}
         error={error}
         color={color}
+        generatedPrompt={generatedPrompt}
       />
-      {/* ) : (
-         <CharmPreview
-           imageUrl={imageUrl}
-           modelImageUrl={modelImageUrl}
-           loading={loading}
-           error={error}
-           color={color}
-         />
-       )}
-       {!isDebugMode && (
-         <SampleGallery
-           samples={samples}
-           imageUrl={imageUrl}
-           onSampleClick={handleSampleClick}
-         />
-       )} */}
     </div>
   );
 }

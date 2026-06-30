@@ -2,6 +2,60 @@ import { useEffect, useRef } from "react";
 import { createButtonLoadingHandler } from "../utils/buttonLoading";
 import { saveSessionData } from "../utils/session";
 
+const HISTORY_DISPLAY_LIMIT = 8;
+
+function getDebugStorageKey(storageKey) {
+  const searchParams = new URLSearchParams(
+    typeof window !== "undefined" ? window.location.search : "",
+  );
+  const debug = searchParams.get("debug");
+  return debug !== null ? `debug${debug}_${storageKey}` : storageKey;
+}
+
+function selectHistorySample(sample) {
+  const input = document.querySelector(".custom-name-input");
+  const btn = document.querySelector(".generate-btn");
+  if (!input || !btn) return;
+
+  input.value = sample.prompt;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  btn.click();
+}
+
+function renderHistoryItem(sample) {
+  const item = document.createElement("button");
+  item.type = "button";
+  item.className = "generate-ai-history__item";
+  item.addEventListener("click", () => selectHistorySample(sample));
+
+  const img = document.createElement("img");
+  img.src = sample.url;
+  img.alt = sample.prompt;
+  img.className = "generate-ai-history__thumb";
+
+  const promptLabel = document.createElement("span");
+  promptLabel.className = "generate-ai-history__prompt";
+  promptLabel.textContent = sample.prompt;
+
+  item.appendChild(img);
+  item.appendChild(promptLabel);
+  return item;
+}
+
+function renderHistoryList(historySamples) {
+  const list = document.querySelector("#charm-history-list");
+  const box = document.querySelector("#charm-history-box");
+  if (!list || !box) return;
+
+  list.innerHTML = "";
+  const visibleSamples = historySamples.slice(0, HISTORY_DISPLAY_LIMIT);
+  visibleSamples.forEach((sample) => {
+    list.appendChild(renderHistoryItem(sample));
+  });
+
+  box.style.display = visibleSamples.length > 0 ? "" : "none";
+}
+
 export function useCharmGenerationV3({
   samples,
   generationCount,
@@ -15,6 +69,7 @@ export function useCharmGenerationV3({
   setGenerationCount,
   setSamples,
   setColor,
+  setGeneratedPrompt,
   loadingRef,
   generationStartTimeRef,
   trackEvent,
@@ -30,6 +85,17 @@ export function useCharmGenerationV3({
   }, []);
 
   useEffect(() => {
+    try {
+      const debugStorageKey = getDebugStorageKey(storageKey);
+      const userGenerations = localStorage.getItem(debugStorageKey);
+      const historySamples = userGenerations ? JSON.parse(userGenerations) : [];
+      renderHistoryList(historySamples);
+    } catch (e) {
+      console.error("Error loading charm history:", e);
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
     const btn = document.querySelector(".generate-btn");
     const input = document.querySelector(".custom-name-input");
     if (!btn || !input) return;
@@ -38,7 +104,6 @@ export function useCharmGenerationV3({
 
     const stopLoadingState = (options = {}) => {
       setLoading(false);
-      setModelLoading?.(false);
       setButtonLoading(btn, false, options);
       loadingRef.current = false;
       abortControllerRef.current = null;
@@ -54,9 +119,13 @@ export function useCharmGenerationV3({
       if (loadingRef.current) return;
       loadingRef.current = true;
       setLoading(true);
-      setButtonLoading(btn, true, { onCancel: cancelGeneration });
-      setError("");
+      setGeneratedPrompt?.("");
       const value = input.value.trim();
+      setButtonLoading(btn, true, {
+        onCancel: cancelGeneration,
+        prompt: value,
+      });
+      setError("");
       if (!value) {
         stopLoadingState({ immediate: true });
         return;
@@ -81,7 +150,8 @@ export function useCharmGenerationV3({
       }
       // let apiUrl = `https://kutezadmin.uc.r.appspot.com/charm-image-with-model?${requestParams.toString()}`;
       // if (isDebugMode) {
-      let apiUrl = `https://kutezadmin.uc.r.appspot.com/charm-image?${requestParams.toString()}`;
+      let apiUrl = `/apps/general/charm-image?${requestParams.toString()}`;
+      // let apiUrl = `https://renart-storefronts.uc.r.appspot.com/charm-image?${requestParams.toString()}`;
       // }
 
       const abortController = new AbortController();
@@ -119,34 +189,36 @@ export function useCharmGenerationV3({
         document.querySelector("#your-charm-prompt").value = finalPrompt;
 
         setImageUrl(`${data.charmImage.url}?v=${Date.now()}`);
+        setGeneratedPrompt?.(finalPrompt);
         setLoading(false);
 
-        try {
-          // setModelLoading?.(true);
-          // const modelApiUrl = `https://kutezadmin.uc.r.appspot.com/charm-model-image?${requestParams.toString()}`;
-          // const modelRes = await fetch(modelApiUrl, {
-          //   method: "POST",
-          //   headers: {
-          //     "Content-Type": "application/json",
-          //     "ngrok-skip-browser-warning": "true",
-          //   },
-          //   body: JSON.stringify({
-          //     charmImageUrl: data.charmImage.url,
-          //     input: finalPrompt,
-          //   }),
-          // });
-          // if (modelRes.ok) {
-          //   const modelData = await modelRes.json();
-          //   if (modelData.success && modelData.modelImage) {
-          //     setModelImageUrl(modelData.modelImage.url);
-          //     data.modelImage = modelData.modelImage; // For the gallery sample
-          //   }
-          // }
-        } catch (modelErr) {
-          console.error("Error fetching model image:", modelErr);
-        } finally {
-          setModelLoading?.(false);
-        }
+        // Fetch the model image in the background; don't block the rest
+        // of the generation success flow on it.
+        setModelLoading?.(true);
+        const modelApiUrl = `/apps/general/charm-model-image?${requestParams.toString()}`;
+        fetch(modelApiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
+          body: JSON.stringify({
+            charmImageUrl: data.charmImage.url,
+            input: finalPrompt,
+          }),
+        })
+          .then((modelRes) => (modelRes.ok ? modelRes.json() : null))
+          .then((modelData) => {
+            if (modelData?.success && modelData.modelImage) {
+              setModelImageUrl(modelData.modelImage.url);
+            }
+          })
+          .catch((modelErr) => {
+            console.error("Error fetching model image:", modelErr);
+          })
+          .finally(() => {
+            setModelLoading?.(false);
+          });
 
         setIsPaused(true);
 
@@ -174,42 +246,45 @@ export function useCharmGenerationV3({
           generation_time_ms: generationTime,
         });
 
+        const newSample = {
+          url: data.charmImage.url,
+          modelUrl: data.modelImage ? data.modelImage.url : null,
+          prompt: finalPrompt,
+        };
+
         const promptExists = samples.some(
           (s) => s.prompt.toLowerCase() === finalPrompt.toLowerCase(),
         );
         if (!promptExists) {
-          const newSample = {
-            url: data.charmImage.url,
-            modelUrl: data.modelImage ? data.modelImage.url : null,
-            prompt: finalPrompt,
-          };
-
           setSamples((prev) => [newSample, ...prev]);
-
-          try {
-            const debugStorageKey = isDebugMode
-              ? `debug${debug}_${storageKey}`
-              : storageKey;
-            const userGenerations = localStorage.getItem(debugStorageKey);
-            const existingUserSamples = userGenerations
-              ? JSON.parse(userGenerations)
-              : [];
-            const updatedUserSamples = [newSample, ...existingUserSamples];
-            localStorage.setItem(
-              debugStorageKey,
-              JSON.stringify(updatedUserSamples),
-            );
-
-            trackEvent("new_charm_added_to_gallery", {
-              prompt: finalPrompt,
-            });
-          } catch (e) {
-            console.error("Error saving to localStorage:", e);
-          }
+          trackEvent("new_charm_added_to_gallery", {
+            prompt: finalPrompt,
+          });
         } else {
           trackEvent("charm_regenerated", {
             prompt: finalPrompt,
           });
+        }
+
+        try {
+          const debugStorageKey = isDebugMode
+            ? `debug${debug}_${storageKey}`
+            : storageKey;
+          const userGenerations = localStorage.getItem(debugStorageKey);
+          const existingUserSamples = userGenerations
+            ? JSON.parse(userGenerations)
+            : [];
+          const dedupedUserSamples = existingUserSamples.filter(
+            (s) => s.prompt.toLowerCase() !== finalPrompt.toLowerCase(),
+          );
+          const updatedUserSamples = [newSample, ...dedupedUserSamples];
+          localStorage.setItem(
+            debugStorageKey,
+            JSON.stringify(updatedUserSamples),
+          );
+          renderHistoryList(updatedUserSamples);
+        } catch (e) {
+          console.error("Error saving to localStorage:", e);
         }
       } catch (e) {
         const generationTime = Date.now() - startTime;
@@ -271,6 +346,7 @@ export function useCharmGenerationV3({
     setGenerationCount,
     setSamples,
     setColor,
+    setGeneratedPrompt,
     loadingRef,
     generationStartTimeRef,
     trackEvent,

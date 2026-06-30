@@ -1,7 +1,6 @@
 // Button loading state management
 export const createButtonLoadingHandler = () => {
   const estimatedDurationMs = 20000;
-  const progressLabel = "Creating something new...";
   const quickFinishDurationMs = 240;
   const estimatedCompletionPercent = 95;
   const maxPendingPercent = 99;
@@ -99,7 +98,9 @@ export const createButtonLoadingHandler = () => {
     if (!originalSvg) originalSvg = btn.querySelector("svg");
 
     if (isLoading) {
-      const { onCancel } = options;
+      const { onCancel, prompt } = options;
+      const truncated = prompt && prompt.length > 14 ? prompt.slice(0, 14) + "..." : prompt;
+      const progressLabel = truncated ? `Designing: "${truncated}"…` : "Designing your charm…";
 
       clearFinishTimeout();
       if (originalSpan) originalSpan.style.display = "none";
